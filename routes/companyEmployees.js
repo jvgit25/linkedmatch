@@ -1,6 +1,7 @@
+// routes/companyEmployees.js
 import express from "express";
-import { resolveLinkedInUrl } from "../services/domainResolver.js";
 import { runQuery } from "../services/neo4jService.js";
+import { resolveLinkedInUrl } from "../services/domainResolver.js";
 
 const router = express.Router();
 
@@ -11,14 +12,15 @@ router.post("/", async (req, res) => {
   try {
     const linkedinUrl = await resolveLinkedInUrl(domain);
 
-    const data = await runQuery(
+    const result = await runQuery(
       `MATCH (c:Company {domain: $domain})
        OPTIONAL MATCH (p:Person)-[:PERSON_WORKS_AT]->(c)
        RETURN c AS company, collect(p) AS employees`,
       { domain }
     );
 
-    if (!data.records || data.records.length === 0) {
+    // No company found in database → safe empty return
+    if (!result.records || result.records.length === 0) {
       return res.json({
         linkedinUrl,
         company: {},
@@ -26,7 +28,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const record = data.records[0];
+    const record = result.records[0];
 
     const company =
       record.has("company") && record.get("company")
@@ -38,5 +40,11 @@ router.post("/", async (req, res) => {
         ? record.get("employees").map(e => e.properties)
         : [];
 
-    res.json({
-      linkedinUrl,
+    res.json({ linkedinUrl, company, employees });
+  } catch (err) {
+    console.error("Error in /company-employees:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
