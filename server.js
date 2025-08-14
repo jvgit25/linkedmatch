@@ -19,9 +19,10 @@ app.use("/api/refresh-company", refreshCompanyRoute);
 app.use("/api/suggestions", suggestionsRoute);
 app.use("/api/user", userRoute);
 app.use("/api/paypal", paypalRoute);
-app.use("/api/user", userRouter);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend running on port ${PORT}`);
+});
 
 export default app;
