@@ -4,17 +4,17 @@ import { fetchCompanyData } from "../services/brightDataService.js";
 import { runQuery } from "../services/neo4jService.js";
 
 const router = express.Router();
-
 const refreshTracker = {};
 
 router.post("/", async (req, res) => {
   const { domain, userId, premium } = req.body;
-  if (!domain || !userId) return res.status(400).json({ error: "Domain and userId required" });
 
+  if (!domain || !userId) return res.status(400).json({ error: "Domain and userId required" });
   if (!premium) return res.status(403).json({ error: "Premium subscription required" });
 
   const now = Date.now();
   const dayKey = Math.floor(now / (24 * 60 * 60 * 1000));
+
   if (!refreshTracker[userId]) refreshTracker[userId] = {};
   if ((refreshTracker[userId][dayKey] || 0) >= 10) {
     return res.status(429).json({ error: "Daily refresh limit reached" });
@@ -47,6 +47,7 @@ router.post("/", async (req, res) => {
       remainingRefreshes: 10 - refreshTracker[userId][dayKey]
     });
   } catch (err) {
+    console.error("Error in /refresh-company:", err);
     res.status(500).json({ error: err.message });
   }
 });

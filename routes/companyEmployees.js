@@ -11,7 +11,6 @@ router.post("/", async (req, res) => {
   try {
     const linkedinUrl = await resolveLinkedInUrl(domain);
 
-    // Fetch cached company and employees
     const data = await runQuery(
       `MATCH (c:Company {domain: $domain})
        OPTIONAL MATCH (p:Person)-[:PERSON_WORKS_AT]->(c)
@@ -19,14 +18,25 @@ router.post("/", async (req, res) => {
       { domain }
     );
 
+    if (!data.records || data.records.length === 0) {
+      return res.json({
+        linkedinUrl,
+        company: {},
+        employees: []
+      });
+    }
+
+    const record = data.records[0];
+
+    const company =
+      record.has("company") && record.get("company")
+        ? record.get("company").properties
+        : {};
+
+    const employees =
+      record.has("employees") && record.get("employees")
+        ? record.get("employees").map(e => e.properties)
+        : [];
+
     res.json({
       linkedinUrl,
-      company: data.records[0].get("company").properties || {},
-      employees: data.records[0].get("employees").map(e => e.properties)
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-export default router;

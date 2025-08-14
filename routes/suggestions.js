@@ -17,18 +17,22 @@ router.post("/", async (req, res) => {
       { userId }
     );
 
-    if (result.records.length === 0) return res.status(404).json({ error: "User not found" });
+    if (!result.records || result.records.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
+    const rec = result.records[0];
     const userData = {
-      role: result.records[0].get("role"),
-      skills: result.records[0].get("skills") || [],
-      interests: result.records[0].get("interests") || []
+      role: rec.has("role") ? rec.get("role") : null,
+      skills: rec.has("skills") ? rec.get("skills") || [] : [],
+      interests: rec.has("interests") ? rec.get("interests") || [] : []
     };
 
     const suggestions = await queryPerplexityForSuggestions(userData);
 
     res.json({ userData, suggestions });
   } catch (err) {
+    console.error("Error in /suggestions:", err);
     res.status(500).json({ error: err.message });
   }
 });
